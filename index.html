@@ -4,42 +4,16 @@
   <meta charset="utf-8">
   <title>Payment Follow-up Update</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 20px;
-    }
+    body { font-family: Arial; background: #f4f6f8; padding: 20px; }
     .form-container {
-      max-width: 500px;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      margin: 50px auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 500px; background: #fff; padding: 20px;
+      border-radius: 10px; margin: 50px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    label {
-      display:block;
-      margin-top:10px;
-      font-weight:bold;
-    }
-    textarea, input {
-      width:100%;
-      padding:8px;
-      margin-top:5px;
-      border:1px solid #ccc;
-      border-radius:5px;
-    }
+    label { display:block; margin-top:10px; font-weight:bold; }
+    textarea, input { width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:5px; }
     button {
-      margin-top:15px;
-      background:#007bff;
-      color:white;
-      border:none;
-      padding:10px 15px;
-      border-radius:5px;
-      cursor:pointer;
-    }
-    button:hover {
-      background:#0056b3;
+      margin-top:15px; background:#007bff; color:white;
+      border:none; padding:10px 15px; border-radius:5px; cursor:pointer;
     }
   </style>
 </head>
@@ -54,8 +28,9 @@
       <label>Discussion Summary</label>
       <textarea name="discussion_summary" required></textarea>
 
-      <label>Next Follow-up Date</label>
-      <input type="date" name="next_followup_date" required>
+      <label>Next Follow-up Date & Time</label>
+      <!-- 👇 Added datetime-local instead of date -->
+      <input type="datetime-local" name="next_followup_datetime" required>
 
       <button type="submit">Submit Update</button>
     </form>
@@ -64,37 +39,38 @@
   </div>
 
   <script>
-    // Extract query parameters from the URL
+    // Extract query params from URL
     const urlParams = new URLSearchParams(window.location.search);
     document.getElementById("order_id").value = urlParams.get("order_id") || "";
     document.getElementById("to_mail").value = urlParams.get("to_mail") || "";
     document.getElementById("executive_name").value = urlParams.get("executive_name") || "";
 
-    // ✅ Correct your webhook URL below (case-sensitive!)
-    const webhookUrl = "https://wowflo.io/webhook/follow-UP"; // must match your n8n webhook node path exactly
+    // Replace with your n8n webhook URL 👇
+    const webhookUrl = "https://wowflo.io/webhook-test/follow-UP";
 
     document.getElementById("followupForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+
       const formData = Object.fromEntries(new FormData(e.target).entries());
 
-      try {
-        const response = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData)
-        });
+      // Convert datetime-local (which is local) to ISO string for n8n
+      if (formData.next_followup_datetime) {
+        formData.next_followup_datetime = new Date(formData.next_followup_datetime).toISOString();
+      }
 
-        if (response.ok) {
-          document.getElementById("responseMsg").innerText = "✅ Your update has been submitted successfully.";
-          e.target.reset();
-        } else {
-          document.getElementById("responseMsg").innerText = "❌ Failed to submit. Please try again later.";
-        }
-      } catch (err) {
-        document.getElementById("responseMsg").innerText = "⚠️ Network error. Please check your connection.";
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        document.getElementById("responseMsg").innerText = "✅ Your update has been submitted successfully.";
+        e.target.reset();
+      } else {
+        document.getElementById("responseMsg").innerText = "❌ Failed to submit. Try again later.";
       }
     });
   </script>
 </body>
 </html>
-
